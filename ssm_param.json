@@ -1,0 +1,1 @@
+{"commands": ["timeout 3 bash -c 'cat < /dev/null > /dev/tcp/terraform-20260624012555864700000001.c9mmoik8wqmj.ap-northeast-1.rds.amazonaws.com/3306' && echo 'succeeded!' || echo 'failed'"]}

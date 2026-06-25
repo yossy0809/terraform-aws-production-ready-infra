@@ -1,0 +1,9 @@
+# パスワードなどの機密情報が入るファイル（絶対にGitHubにあげない）
+terraform.tfvars
+*.tfvars
+
+# Terraformが自動生成するファイル（不要）
+.terraform/
+.terraform.lock.hcl
+terraform.tfstate
+terraform.tfstate.backup
