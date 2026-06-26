@@ -1,16 +1,18 @@
 # ==========================================
 # ALB Security Group
+# CloudFront エッジノードからの HTTP のみ許可
+# ALB への直接アクセスをブロックし、必ず CloudFront 経由にする
 # ==========================================
 resource "aws_security_group" "alb" {
   name        = "portfolio-alb-sg"
-  description = "Allow HTTP traffic from internet"
+  description = "Allow HTTP traffic from CloudFront only"
   vpc_id      = aws_vpc.main.id
 
   ingress {
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    from_port       = 80
+    to_port         = 80
+    protocol        = "tcp"
+    prefix_list_ids = [data.aws_ec2_managed_prefix_list.cloudfront.id]
   }
 
   egress {
