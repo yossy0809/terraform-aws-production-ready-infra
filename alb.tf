@@ -43,9 +43,3 @@ resource "aws_lb_listener" "http" {
     target_group_arn = aws_lb_target_group.tg.arn
   }
 }
-
-resource "aws_lb_target_group_attachment" "web_app" {
-  target_group_arn = aws_lb_target_group.tg.arn
-  target_id        = aws_instance.web_app.id
-  port             = 80
-}

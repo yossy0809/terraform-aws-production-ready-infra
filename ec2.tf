@@ -8,16 +8,19 @@ data "aws_ami" "amazon_linux_2023" {
   }
 }
 
-resource "aws_instance" "web_app" {
-  ami           = data.aws_ami.amazon_linux_2023.id
+resource "aws_launch_template" "web_app" {
+  name_prefix   = "portfolio-web-app-"
+  image_id      = data.aws_ami.amazon_linux_2023.id
   instance_type = "t3.micro"
 
-  subnet_id              = aws_subnet.private_1a.id
   vpc_security_group_ids = [aws_security_group.ec2.id]
-  iam_instance_profile   = aws_iam_instance_profile.ec2_ssm.name
+
+  iam_instance_profile {
+    name = aws_iam_instance_profile.ec2_ssm.name
+  }
 
   # Nginx のインストールと起動
-  user_data = <<-EOF
+  user_data = base64encode(<<-EOF
               #!/bin/bash
               dnf update -y
               dnf install -y nginx
@@ -25,8 +28,38 @@ resource "aws_instance" "web_app" {
               systemctl enable nginx
               echo "<h1>Hello from 3-Tier Architecture Web Server!</h1>" > /usr/share/nginx/html/index.html
               EOF
+  )
 
-  tags = {
-    Name = "portfolio-web-app-server"
+  tag_specifications {
+    resource_type = "instance"
+
+    tags = {
+      Name = "portfolio-web-app-server"
+    }
   }
+}
+
+resource "aws_autoscaling_group" "web_app" {
+  name                = "portfolio-web-app-asg"
+  vpc_zone_identifier = [aws_subnet.private_1a.id, aws_subnet.private_1c.id]
+
+  min_size         = 1
+  max_size         = 2
+  desired_capacity = 1
+
+  launch_template {
+    id      = aws_launch_template.web_app.id
+    version = "$Latest"
+  }
+
+  tag {
+    key                 = "Name"
+    value               = "portfolio-web-app-server"
+    propagate_at_launch = true
+  }
+}
+
+resource "aws_autoscaling_attachment" "web_app" {
+  autoscaling_group_name = aws_autoscaling_group.web_app.name
+  lb_target_group_arn    = aws_lb_target_group.tg.arn
 }
