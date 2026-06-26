@@ -1,10 +1,10 @@
 # ==========================================
-# DBパスワードをParameter Storeに安全に保管
+# SSM Parameter Store — DB パスワード管理
 # ==========================================
 resource "aws_ssm_parameter" "db_password" {
   name        = "/portfolio/database/password"
   description = "Database master password"
-  type        = "SecureString" # これでAWS側で自動的に暗号化されます
+  type        = "SecureString"
   value       = var.db_password
 
   tags = {
@@ -13,10 +13,8 @@ resource "aws_ssm_parameter" "db_password" {
 }
 
 # ==========================================
-# SSM Session Manager 用 IAM設定
+# IAM — SSM Session Manager 用設定
 # ==========================================
-
-# EC2に付与するIAMロール
 resource "aws_iam_role" "ec2_ssm" {
   name = "portfolio-ec2-ssm-role"
 
@@ -34,13 +32,11 @@ resource "aws_iam_role" "ec2_ssm" {
   }
 }
 
-# SSM Session Manager に必要なポリシーを付与
 resource "aws_iam_role_policy_attachment" "ec2_ssm" {
   role       = aws_iam_role.ec2_ssm.name
   policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
 }
 
-# EC2にIAMロールを紐付けるためのインスタンスプロファイル
 resource "aws_iam_instance_profile" "ec2_ssm" {
   name = "portfolio-ec2-ssm-profile"
   role = aws_iam_role.ec2_ssm.name

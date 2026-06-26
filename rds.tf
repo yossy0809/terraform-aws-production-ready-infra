@@ -1,7 +1,3 @@
-# ==========================================
-# 1. RDS用のサブネットグループの作成
-# ==========================================
-# RDSをマルチAZ（2つの異なる場所）に配置するために、事前に作った2つのDBサブネットを1つにまとめます
 resource "aws_db_subnet_group" "rds" {
   name       = "portfolio-rds-subnet-group"
   subnet_ids = [aws_subnet.db_1a.id, aws_subnet.db_1c.id]
@@ -11,24 +7,25 @@ resource "aws_db_subnet_group" "rds" {
   }
 }
 
-# ==========================================
-# 2. RDS（MySQL）インスタンスの作成
-# ==========================================
 resource "aws_db_instance" "mysql" {
-  allocated_storage    = 20            # ストレージ容量（20GBは無料枠内）
-  max_allocated_storage = 50           # 自動拡張の上限
-  engine               = "mysql"
-  engine_version       = "8.0"       # MySQLのバージョン
-  instance_class       = "db.t3.micro"  # 無料枠対象のインスタンスタイプ
+  allocated_storage     = 20
+  max_allocated_storage = 50
+  engine                = "mysql"
+  engine_version        = "8.0"
+  instance_class        = "db.t3.micro"
 
-  db_name              = "portfolio_db" # 初期データベース名
-  username             = "admin"        # マスターユーザー名
-password             = aws_ssm_parameter.db_password.value
-  # 配置設定
+  db_name  = "portfolio_db"
+  username = "admin"
+  password = aws_ssm_parameter.db_password.value
+
   db_subnet_group_name   = aws_db_subnet_group.rds.name
-  vpc_security_group_ids = [aws_security_group.rds.id] # RDS用のSGを紐付け
-  skip_final_snapshot    = true          # 削除時にバックアップを作成しない設定（検証用）
-  multi_az               = true          # マルチAZ構成（フェイルオーバー対応）
+  vpc_security_group_ids = [aws_security_group.rds.id]
+
+  multi_az                = true # AZ 障害時の自動フェイルオーバー
+  storage_encrypted       = true # 保存データの暗号化
+  backup_retention_period = 7    # 自動バックアップを 7 日間保持
+
+  skip_final_snapshot = true # 検証環境のため無効化
 
   tags = {
     Name = "portfolio-rds-mysql"

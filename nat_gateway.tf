@@ -1,19 +1,17 @@
 # ==========================================
-# 1. NATゲートウェイ用の固定IP（Elastic IP）
+# NAT Gateway
 # ==========================================
 resource "aws_eip" "nat" {
   domain = "vpc"
+
   tags = {
     Name = "portfolio-nat-eip"
   }
 }
 
-# ==========================================
-# 2. NATゲートウェイの作成（パブリックに配置）
-# ==========================================
 resource "aws_nat_gateway" "nat" {
   allocation_id = aws_eip.nat.id
-  subnet_id     = aws_subnet.public_1a.id # パブリックに置くのが鉄則！
+  subnet_id     = aws_subnet.public_1a.id
 
   tags = {
     Name = "portfolio-nat-gw"
@@ -21,12 +19,12 @@ resource "aws_nat_gateway" "nat" {
 }
 
 # ==========================================
-# 3. プライベートサブネット用のルートテーブル
+# Private Route Table (EC2 subnets)
+# アウトバウンド: NAT Gateway 経由
 # ==========================================
 resource "aws_route_table" "private" {
   vpc_id = aws_vpc.main.id
 
-  # 外への通信（0.0.0.0/0）はすべてNATゲートウェイに送る設定
   route {
     cidr_block     = "0.0.0.0/0"
     nat_gateway_id = aws_nat_gateway.nat.id
@@ -37,10 +35,19 @@ resource "aws_route_table" "private" {
   }
 }
 
-# ==========================================
-# 4. ルートテーブルをプライベートサブネットに紐付け
-# ==========================================
 resource "aws_route_table_association" "private_1a" {
   subnet_id      = aws_subnet.private_1a.id
   route_table_id = aws_route_table.private.id
+}
+
+# ==========================================
+# DB Route Table (RDS subnets)
+# インターネット経路なし — VPC 内ローカル通信のみ
+# ==========================================
+resource "aws_route_table" "db" {
+  vpc_id = aws_vpc.main.id
+
+  tags = {
+    Name = "portfolio-db-rt"
+  }
 }
